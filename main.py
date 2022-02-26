@@ -2,32 +2,33 @@ import math
 from functools import reduce
 from random import randint
 
+
 # Generates hamming code
-def generateHamming(msgBits: list, s: int, r: int):
-  # Hamming code list length range
-  hammingLR = range(s+r)
+def generate_hamming(msgBits, s, r):
+  hammingCodeLength = s + r
   # Hamming code list
-  hammingCode: list = [0 for i in hammingLR]
+  hammingCode = [0 for i in range(hammingCodeLength)]
   # Find position of redundant bits
   for i in range(r):
     hammingCode[pow(2, i) - 1] = -1
   
-  j: int = 0
+  j = 0
   # Place message bits where there are no redundant bits
-  for i in hammingLR:
-    if hammingCode[i] == 0:
+  for i, v in enumerate(hammingCode):
+    if v == 0:
       hammingCode[i] = msgBits[j]
       j += 1
-  for i in hammingLR:
+    
+  for i, v in enumerate(hammingCode):
     # Continue if current bit is not redundant
-    if hammingCode[i] != -1:
+    if v != -1:
       continue
     
-    x: int = int(math.log(i+1, 2))
-    one_count: int = 0
+    x = int(math.log(i + 1, 2))
+    one_count = 0
 
     # Count ones
-    for j in range(i + 2, s+r+1):
+    for j in range(v + 2, hammingCodeLength + 1):
       if j & (1 << x):
         if hammingCode[j - 1] == 1:
           one_count += 1
@@ -40,22 +41,24 @@ def generateHamming(msgBits: list, s: int, r: int):
   return [0] + hammingCode
 
 
-def findHamming(msgBits: list):
+def find_hamming(msgBits):
   # Message bits size
-  size: int = len(msgBits)
+  size = len(msgBits)
   # Number of redundant bits
-  rBits: int = 1
+  rBits = 1
   # Find number of redundant bits
-  while pow(2, rBits) < (size + rBits + 1):
+  while pow(2, rBits) < size + rBits + 1:
     rBits += 1
   # Generate hamming code
-  hammingCode: list = generateHamming(msgBits, size, rBits)
+  hammingCode = generate_hamming(msgBits, size, rBits)
   # Return hamming code
   return hammingCode
+
 
 # Checks for error in hamming code
 def checkHamming(bits):
   return reduce(lambda x, y: x ^ y, [i for i, bit in enumerate(bits) if bit])
+
 
 # Random noise
 def noise(message):
@@ -66,43 +69,39 @@ def noise(message):
 
 
 def receiver(hammingCode):
-  print("\nHamming code recieved: " + ' '.join([str(elem) for elem in hammingCode]))
+  print(f"\nHamming code recieved: {' '.join([str(elem) for elem in hammingCode])}")
   # Find error if there is any
-  error: int = checkHamming(hammingCode)
+  error = checkHamming(hammingCode)
   # Correct bit
   hammingCode[error] = int(not hammingCode[error])
-
-  # Getting the message
-  size: int = len(hammingCode)
   # Number of redundant bits
-  rBits: int = 1
+  rBits = 1
   # Find number of redundant bits
-  while pow(2, rBits) < (size):
+  while pow(2, rBits) < len(hammingCode):
     rBits += 1
   for i in range(rBits):
-    hammingCode[pow(2, i)] = -1
-  # Message bits
-  msgBits = list(filter(lambda a: a != -1, hammingCode))
-  msgBitsStr = ' '.join([str(elem) for elem in msgBits[1::]]) + "\n"
+    hammingCode.pop(pow(2, i))
+  msgBitsStr = ' '.join([str(elem) for elem in hammingCode[1::]])
 
   # Print out data
   if error:
-    print("Error found at: " + str(error))
-    print("Fixed received message bits: " + msgBitsStr)
+    print(f"Error found at: {error}")
+    print(f"Fixed received message bits: {msgBitsStr}\n")
   else: 
     print("No error found")
-    print("Message bits received: " + msgBitsStr)
+    print(f"Message bits received: {msgBitsStr}\n")
 
 
 def main():
-  bits = input("Message bits: ")
+  # Get message bits
+  msgBits = list(input("Message bits: ").replace(" ", ""))
   # Message bits
-  msgBits: list = list(map(int, list(bits)))
-  # Generate hammign code
-  hammingCode = findHamming(msgBits)
+  msgBits = list(map(int, msgBits))
+  # Generate hamming code
+  hammingCode = find_hamming(msgBits)
   # Print out data
-  print("\nMessage bits: " + ' '.join([str(elem) for elem in msgBits]))
-  print("Hamming code: " + ' '.join([str(elem) for elem in hammingCode]))
+  print(f"\nMessage bits: {' '.join([str(elem) for elem in msgBits])}")
+  print(f"Hamming code: {' '.join([str(elem) for elem in hammingCode])}")
   # Send data with random noise to receiver
   receiver(noise(hammingCode))
 
